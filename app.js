@@ -39,7 +39,7 @@ const OBJECTIFS = [
 
 const TEMPS = [10,15,20,30,45,60,90];
 const ORDER = ["welcome","prenom","profil","niveau","classe","serie","matieres","objectifs","temps","nbenfants","pricing","final","form","success"];
-const NO_HEADER = ["welcome","final","form","success","login","loginSuccess","espace","lecon","quiz"];
+const NO_HEADER = ["welcome","final","form","success","login","loginSuccess","espace","lecon","quiz","fiche","flashlist","defi","coach"];
 const WELCOME_SLIDES = [
   { kind:"subjects", title:"Les bonnes notes démarrent sous le baobab !", sub:"Pour toute la famille, du CI à la Terminale, dans toutes les matières !" },
   { kind:"method", title:"Une méthode qui unit tradition et technologie", sub:"Plus de 10 000 contenus créés, vérifiés et conformes au programme sénégalais." },
@@ -61,6 +61,7 @@ const BUBBLES = {
 };
 
 let step = "welcome";
+let sessionActive = false;
 let ans = { prenom:"", profil:null, consentAge:false, niveau:null, classe:null, serie:null,
   matieres:[], objectifs:[], temps:2, nbEnfants:null, plan:"premium", duree:"12mois" };
 
@@ -145,6 +146,10 @@ function body(){
     case "espace": return viewEspace();
     case "lecon": return viewLecon();
     case "quiz": return viewQuiz();
+    case "fiche": return viewFiche();
+    case "flashlist": return viewFlashList();
+    case "defi": return viewDefi();
+    case "coach": return viewCoach();
   }
 }
 
@@ -251,7 +256,7 @@ function previewModalHtml(){
     <div class="pmodal">
       <button class="pmodal-close" onclick="closePreview()">✕</button>
       ${inner}
-      <button class="cta" style="margin-top:6px;" onclick="closePreview(); step='prenom'; render();">Commencer maintenant 🚀</button>
+      <button class="cta" style="margin-top:6px;" onclick="closePreview(); if(loggedPrenom||sessionActive){ openEspace(); } else { step='prenom'; render(); }">${(loggedPrenom||sessionActive) ? 'Voir mes cours 📖' : 'Commencer maintenant 🚀'}</button>
     </div>
   </div>`;
 }
@@ -314,7 +319,7 @@ function viewWelcome(){
   return `
   <div class="welcome">
     <div class="wbrand">
-      <div class="logo">🌳 SUNU ÉCOLE</div>
+      <div class="logo"><img src="logo-emblem.png" class="logo-emblem" alt="Sunu École">SUNU ÉCOLE</div>
       <div class="tagline">L'arbre à palabres du savoir</div>
     </div>
     <div class="wstage">${welcomeVisual(s.kind)}</div>
@@ -330,7 +335,7 @@ function viewWelcome(){
 function viewPrenom(){
   return `
     <div class="brandbar">
-      <div class="brand">🌳 Sunu École</div>
+      <div class="brand"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">Sunu École</div>
       <div class="brand-sub">L'arbre à palabres du savoir</div>
     </div>
     <p class="bubble">${BUBBLES.prenom}</p>
@@ -463,7 +468,7 @@ function viewPricing(){
   const priceM = isPremium ? 12900 : 7900;
   const annual = priceY*12;
   return `
-    <div class="brandbar" style="margin-bottom:6px;"><div class="brand">🌳 Sunu École</div></div>
+    <div class="brandbar" style="margin-bottom:6px;"><div class="brand"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">Sunu École</div></div>
     <div class="segmented">
       <button class="${isPremium?'active':''}" onclick="ans.plan='premium'; render();">👑 Premium</button>
       <button class="${!isPremium?'active':''}" onclick="ans.plan='standard'; render();">Standard</button>
@@ -529,7 +534,7 @@ function viewFinal(){
 function viewForm(){
   return `
   <div class="form-wrap">
-    <div class="brandbar" style="margin-bottom:18px;"><div class="brand">🌳 Sunu École</div></div>
+    <div class="brandbar" style="margin-bottom:18px;"><div class="brand"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">Sunu École</div></div>
     <h1 class="title">Créez vos identifiants</h1>
     <p class="subtitle">Dernière étape avant que ${ans.prenom||"votre enfant"} ne commence à réviser.</p>
     <div class="form-field"><label>Adresse e-mail</label><input type="email" id="emailInput" placeholder="vous@exemple.com"></div>
@@ -549,7 +554,7 @@ function goToLogin(){
 function viewLogin(){
   return `
   <div class="form-wrap">
-    <div class="brandbar" style="margin-bottom:18px;"><div class="brand">🌳 Sunu École</div></div>
+    <div class="brandbar" style="margin-bottom:18px;"><div class="brand"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">Sunu École</div></div>
     <h1 class="title">Connexion</h1>
     <p class="subtitle">Retrouve ton espace de révision Sunu École.</p>
     <div class="form-field"><label>Adresse e-mail</label><input type="email" id="loginEmail" placeholder="vous@exemple.com"></div>
@@ -594,7 +599,7 @@ async function submitLogin(){
       const { data: eleves } = await sb.from('eleves').select('prenom').eq('user_id', data.user.id).order('created_at', { ascending:false }).limit(1);
       loggedPrenom = (eleves && eleves.length) ? eleves[0].prenom : "";
     }catch(e){ loggedPrenom = ""; }
-    step = 'loginSuccess'; render();
+    sessionActive = true; step = 'loginSuccess'; render();
   }catch(err){
     msg.textContent = (err && err.message) ? err.message : "Une erreur est survenue, réessaie.";
     btn.disabled = false; btn.textContent = "Se connecter";
@@ -607,20 +612,20 @@ function viewLoginSuccess(){
   return `
   <div class="welcome" style="background:radial-gradient(120% 80% at 50% -10%, #F0A85C 0%, #C1440E 55%, #6E2A12 100%);">
     <div class="wbrand">
-      <div class="logo">🌳 SUNU ÉCOLE</div>
+      <div class="logo"><img src="logo-emblem.png" class="logo-emblem" alt="Sunu École">SUNU ÉCOLE</div>
       <div class="tagline">L'arbre à palabres du savoir</div>
     </div>
     <div class="wstage">
       <div class="wgrid">
-        <div class="wchip" onclick="tileClick('revision')"><span class="ic">📝</span>Révision</div>
+        <div class="wchip" onclick="openEspace('revision')"><span class="ic">📝</span>Révision</div>
         <div class="wchip" onclick="tileClick('video')"><span class="ic">🎬</span>Vidéo</div>
-        <div class="wchip terr" onclick="tileClick('defis')"><span class="ic">🏆</span>Défis</div>
-        <div class="wchip" onclick="tileClick('exercices')"><span class="ic">✏️</span>Exercices</div>
-        <div class="wchip gold" onclick="tileClick('cours')"><span class="ic">📖</span>Cours</div>
-        <div class="wchip" onclick="tileClick('fiches')"><span class="ic">🖼️</span>Fiches</div>
-        <div class="wchip green" onclick="tileClick('quiz')"><span class="ic">🧠</span>Quiz</div>
-        <div class="wchip" onclick="tileClick('flashcards')"><span class="ic">🃏</span>Flashcards</div>
-        <div class="wchip" onclick="tileClick('coachia')"><span class="ic">🤖</span>Coach IA</div>
+        <div class="wchip terr" onclick="openDefi()"><span class="ic">🏆</span>Défis</div>
+        <div class="wchip" onclick="openEspace('exercices')"><span class="ic">✏️</span>Exercices</div>
+        <div class="wchip gold" onclick="openEspace('cours')"><span class="ic">📖</span>Cours</div>
+        <div class="wchip" onclick="openEspace('fiches')"><span class="ic">🖼️</span>Fiches</div>
+        <div class="wchip green" onclick="openEspace('quiz')"><span class="ic">🧠</span>Quiz</div>
+        <div class="wchip" onclick="openEspace('flashcards')"><span class="ic">🃏</span>Flashcards</div>
+        <div class="wchip" onclick="openCoach()"><span class="ic">🤖</span>Coach IA</div>
       </div>
     </div>
     <h1 class="wheadline">Content de te revoir${hello} !</h1>
@@ -698,7 +703,7 @@ async function submitAccount(){
         if(oErr) throw oErr;
       }
 
-      step = 'success'; render();
+      sessionActive = true; step = 'success'; render();
     } else {
       msg.style.color = '#fff';
       msg.textContent = "Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis reconnecte-toi pour finaliser le profil.";
@@ -730,6 +735,8 @@ function viewSuccess(){
 let espaceLecons = [];
 let espaceLoading = false;
 let espaceClasse = null;
+let espaceMatieres = [];
+let espaceMode = 'cours';
 let currentLecon = null;
 let currentQuestions = [];
 let quizIndex = 0;
@@ -737,7 +744,17 @@ let quizScore = 0;
 let quizAnswered = false;
 let quizSelected = null;
 
-async function openEspace(){
+const MODE_LABELS = {
+  cours: { titre:'Mes cours', emoji:'📖', vide:'Choisis des matières lors de l\'inscription pour voir apparaître tes leçons ici.' },
+  revision: { titre:'Mes révisions', emoji:'📝', vide:'Aucune leçon à réviser pour l\'instant.' },
+  exercices: { titre:'Mes exercices', emoji:'✏️', vide:'Aucun exercice disponible pour l\'instant.' },
+  fiches: { titre:'Mes fiches', emoji:'🖼️', vide:'Aucune fiche disponible pour l\'instant.' },
+  quiz: { titre:'Mes quiz', emoji:'🧠', vide:'Aucun quiz disponible pour l\'instant.' },
+  flashcards: { titre:'Mes flashcards', emoji:'🃏', vide:'Aucune flashcard disponible pour l\'instant.' }
+};
+
+async function openEspace(mode){
+  espaceMode = mode || 'cours';
   espaceLoading = true; step = 'espace'; render();
   try{
     const { data: userData } = await sb.auth.getUser();
@@ -759,6 +776,7 @@ async function openEspace(){
     const { data: lecons } = await req;
     espaceLecons = lecons || [];
     espaceClasse = classe;
+    espaceMatieres = matieres;
   }catch(e){
     espaceLecons = [];
   }
@@ -767,21 +785,22 @@ async function openEspace(){
 
 function viewEspace(){
   if(espaceLoading){
-    return `<div class="success"><div class="big-lion">🌳</div><p>Chargement de tes cours...</p></div>`;
+    return `<div class="success"><div class="big-lion">🌳</div><p>Chargement...</p></div>`;
   }
+  const meta = MODE_LABELS[espaceMode] || MODE_LABELS.cours;
   const grouped = {};
   espaceLecons.forEach(l=>{ (grouped[l.matiere] = grouped[l.matiere]||[]).push(l); });
   const matieresList = Object.keys(grouped);
   return `
   <div class="form-wrap" style="background:var(--slate-bg); color:var(--ink);">
-    <div class="brandbar"><div class="brand" style="color:var(--leaf-dark);">🌳 Mes cours</div></div>
+    <div class="brandbar"><div class="brand" style="color:var(--leaf-dark);"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">${meta.titre}</div></div>
     ${espaceClasse ? `<p style="text-align:center; margin:-10px 0 14px; font-weight:700; color:var(--terracotta);">Classe : ${espaceClasse}</p>` : ""}
-    ${matieresList.length===0 ? `<p class="subtitle">${espaceClasse ? `Le contenu pour la classe de ${espaceClasse} arrive bientôt ! Pour l'instant, le programme complet (cours + quiz) est disponible du CI au CM2.` : "Aucun cours pour l'instant. Choisis des matières lors de l'inscription pour voir apparaître tes leçons ici."}</p>` : ""}
+    ${matieresList.length===0 ? `<p class="subtitle">${espaceClasse ? `Le contenu pour la classe de ${espaceClasse} arrive bientôt ! Pour l'instant, le programme complet est disponible du CI au CM2.` : meta.vide}</p>` : ""}
     ${matieresList.map(m=>`
       <h3 style="margin:14px 0 8px; color:var(--leaf-dark); font-size:16px;">${m}</h3>
       ${grouped[m].map(l=>`
-        <div class="option" onclick="openLecon('${l.id}')">
-          <span class="em">📖</span>
+        <div class="option" onclick="openLecon('${l.id}','${espaceMode}')">
+          <span class="em">${meta.emoji}</span>
           <div><div style="font-weight:700;">${l.titre}</div><div style="font-size:12.5px; color:var(--ink-soft); font-weight:400;">${l.resume||''}</div></div>
         </div>
       `).join("")}
@@ -791,13 +810,17 @@ function viewEspace(){
   </div>`;
 }
 
-async function openLecon(id){
+async function openLecon(id, mode){
   const { data: lecon } = await sb.from('lecons').select('*').eq('id', id).single();
   const { data: qs } = await sb.from('quiz_questions').select('*').eq('lecon_id', id).order('ordre');
   currentLecon = lecon;
   currentQuestions = qs || [];
   quizIndex = 0; quizScore = 0; quizAnswered = false; quizSelected = null;
-  step = 'lecon'; render();
+  if(mode==='fiches'){ step = 'fiche'; }
+  else if(mode==='flashcards'){ flashIndex = 0; flashFlipped = false; step = 'flashlist'; }
+  else if(mode==='quiz' || mode==='exercices'){ step = 'quiz'; }
+  else { step = 'lecon'; }
+  render();
 }
 
 function viewLecon(){
@@ -856,6 +879,202 @@ function selectAnswer(i){
 }
 function nextQuestion(){
   quizIndex++; quizAnswered = false; quizSelected = null; render();
+}
+
+/* ---------------- Fiches ---------------- */
+function viewFiche(){
+  if(!currentLecon) return `<div class="success"><p>Fiche introuvable.</p></div>`;
+  const lines = currentLecon.contenu.split(/\n+/).map(s=>s.trim()).filter(s=>s.length>3).slice(0,7);
+  const withBold = lines.map(l=>l.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'));
+  return `
+  <div class="form-wrap" style="background:var(--slate-bg); color:var(--ink); padding-bottom:20px;">
+    <button class="back-btn" style="background:var(--leaf-dark); margin-bottom:14px;" onclick="openEspace('fiches')">‹</button>
+    <span class="eyebrow" style="align-self:flex-start;">${currentLecon.matiere} · Fiche</span>
+    <h1 class="title" style="margin-top:8px;">${currentLecon.titre}</h1>
+    <div class="field" style="min-height:auto;">
+      ${withBold.map(l=>`<p style="margin:0 0 10px; line-height:1.5; font-size:14px;">▸ ${l}</p>`).join("")}
+    </div>
+    <div class="grow"></div>
+    <button class="cta" onclick="step='lecon'; render();">📖 Voir le cours complet</button>
+    <button class="link-skip" onclick="step='quiz'; render();">Faire le quiz de cette fiche</button>
+  </div>`;
+}
+
+/* ---------------- Flashcards ---------------- */
+let flashIndex = 0;
+function viewFlashList(){
+  if(!currentQuestions.length){
+    return `<div class="success"><p>Pas de flashcards pour cette leçon.</p><button class="cta" style="max-width:220px;" onclick="openEspace('flashcards')">Retour</button></div>`;
+  }
+  const q = currentQuestions[flashIndex];
+  return `
+  <div class="form-wrap" style="background:var(--slate-bg); color:var(--ink); padding-bottom:20px;">
+    <button class="back-btn" style="background:var(--leaf-dark); margin-bottom:14px;" onclick="openEspace('flashcards')">‹</button>
+    <span class="eyebrow" style="align-self:flex-start;">${currentLecon.matiere} · Carte ${flashIndex+1}/${currentQuestions.length}</span>
+    <h1 class="title" style="margin-top:8px;">${currentLecon.titre}</h1>
+    <div class="pflip" onclick="flashFlipped=!flashFlipped; render();">${flashFlipped ? (q.choix[q.reponse_index] + (q.explication ? ' — '+q.explication : '')) : q.question}</div>
+    <p style="text-align:center; font-size:12.5px; color:var(--ink-soft); margin-top:10px;">Touche la carte pour ${flashFlipped?'revoir la question':'voir la réponse'}</p>
+    <div class="grow"></div>
+    <div style="display:flex; gap:10px;">
+      <button class="cta" style="box-shadow:0 5px 0 #5e3b1b; background:var(--wood);" onclick="flashNav(-1)" ${flashIndex===0?'disabled':''}>‹ Précédente</button>
+      <button class="cta" onclick="flashNav(1)">${flashIndex+1<currentQuestions.length?'Suivante ›':'Terminer'}</button>
+    </div>
+  </div>`;
+}
+function flashNav(delta){
+  if(delta>0 && flashIndex+1>=currentQuestions.length){ openEspace('flashcards'); return; }
+  flashIndex = Math.max(0, flashIndex+delta); flashFlipped = false; render();
+}
+
+/* ---------------- Défi du jour ---------------- */
+let defiLecon = null;
+let defiQuestion = null;
+let defiAnswered = false;
+let defiSelected = null;
+let defiStreak = 0;
+let defiLoading = false;
+
+async function openDefi(){
+  defiLoading = true; defiAnswered = false; defiSelected = null; step = 'defi'; render();
+  try{
+    const { data: userData } = await sb.auth.getUser();
+    const user = userData && userData.user;
+    let matieres = [], classe = null;
+    if(user){
+      const { data: eleves } = await sb.from('eleves').select('id,classe').eq('user_id', user.id).order('created_at',{ascending:false}).limit(1);
+      if(eleves && eleves.length){
+        classe = eleves[0].classe;
+        const { data: em } = await sb.from('eleve_matieres').select('matiere').eq('eleve_id', eleves[0].id);
+        matieres = (em||[]).map(r=>r.matiere);
+      }
+    }
+    if(!classe) classe = ans.classe || null;
+    let req = sb.from('lecons').select('*');
+    if(classe) req = req.eq('classe', classe);
+    if(matieres.length) req = req.in('matiere', matieres);
+    const { data: lecons } = await req;
+    const pool = lecons && lecons.length ? lecons : [];
+    if(!pool.length){ defiLecon = null; defiQuestion = null; defiLoading=false; render(); return; }
+    const lecon = pool[Math.floor(Math.random()*pool.length)];
+    const { data: qs } = await sb.from('quiz_questions').select('*').eq('lecon_id', lecon.id);
+    if(!qs || !qs.length){ defiLecon = null; defiQuestion = null; defiLoading=false; render(); return; }
+    defiLecon = lecon;
+    defiQuestion = qs[Math.floor(Math.random()*qs.length)];
+  }catch(e){
+    defiLecon = null; defiQuestion = null;
+  }
+  defiLoading = false; render();
+}
+function answerDefi(i){
+  if(defiAnswered) return;
+  defiSelected = i; defiAnswered = true;
+  if(i===defiQuestion.reponse_index) defiStreak++; else defiStreak = 0;
+  render();
+}
+function viewDefi(){
+  if(defiLoading) return `<div class="success"><div class="big-lion">🏆</div><p>Préparation de ton défi...</p></div>`;
+  if(!defiQuestion){
+    return `<div class="success"><p>Pas encore de défi disponible pour ta classe.</p><button class="cta" style="max-width:220px;" onclick="step='welcome'; welcomeSlide=0; render();">Retour</button></div>`;
+  }
+  const q = defiQuestion;
+  return `
+  <div class="form-wrap" style="background:var(--slate-bg); color:var(--ink); padding-bottom:20px;">
+    <button class="back-btn" style="background:var(--terracotta); margin-bottom:14px;" onclick="step='welcome'; welcomeSlide=0; render();">‹</button>
+    <span class="eyebrow" style="align-self:flex-start; background:#FDF1D6; color:#8f320a;">🏆 Défi du jour · ${defiLecon.matiere}</span>
+    <h1 class="title" style="margin-top:8px;">${q.question}</h1>
+    ${q.choix.map((c,i)=>{
+      let cls='option';
+      if(defiAnswered && i===q.reponse_index) cls+=' selected';
+      return `<div class="${cls}" style="${defiAnswered && i===defiSelected && i!==q.reponse_index?'border-color:var(--terracotta); background:#FBE3D8;':''}" onclick="answerDefi(${i})">${c}</div>`;
+    }).join("")}
+    ${defiAnswered ? `<div class="tip"><span class="emoji">💡</span><p>${q.explication||''}</p></div>
+      <div class="callout ${defiSelected===q.reponse_index?'green':''}">${defiSelected===q.reponse_index ? `🔥 Série en cours : ${defiStreak}` : "Série réinitialisée, retente ta chance !"}</div>` : ""}
+    <div class="grow"></div>
+    ${defiAnswered ? `<button class="cta" onclick="openDefi()">Nouveau défi 🎲</button>` : ""}
+  </div>`;
+}
+
+/* ---------------- Coach IA (recherche réelle dans les cours) ---------------- */
+let coachMessages = [];
+let coachLoading = false;
+
+function openCoach(){
+  if(!coachMessages.length){
+    const name = ans.prenom || loggedPrenom || "";
+    coachMessages = [{ from:'coach', text: `Jërejëf${name?' '+name:''} ! Pose-moi une question sur ton programme (ex : "les pourcentages", "l'indépendance du Sénégal") et je cherche dans tes cours pour toi. 🌳` }];
+  }
+  step = 'coach'; render();
+}
+
+async function askCoach(){
+  const input = document.getElementById('coachInput');
+  const question = (input.value||"").trim();
+  if(!question) return;
+  coachMessages.push({ from:'user', text: question });
+  input.value = "";
+  coachLoading = true; render();
+  try{
+    const { data: userData } = await sb.auth.getUser();
+    const user = userData && userData.user;
+    let matieres = [], classe = null;
+    if(user){
+      const { data: eleves } = await sb.from('eleves').select('id,classe').eq('user_id', user.id).order('created_at',{ascending:false}).limit(1);
+      if(eleves && eleves.length){
+        classe = eleves[0].classe;
+        const { data: em } = await sb.from('eleve_matieres').select('matiere').eq('eleve_id', eleves[0].id);
+        matieres = (em||[]).map(r=>r.matiere);
+      }
+    }
+    if(!classe) classe = ans.classe || null;
+    let req = sb.from('lecons').select('*').or(`titre.ilike.%${question}%,contenu.ilike.%${question}%`);
+    if(classe) req = req.eq('classe', classe);
+    const { data: matches } = await req.limit(1);
+    const lecon = matches && matches[0];
+
+    const res = await fetch('/api/coach', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        question,
+        prenom: ans.prenom || loggedPrenom || "",
+        classe,
+        matiere: lecon ? lecon.matiere : (matieres[0]||""),
+        contenu: lecon ? lecon.contenu : ""
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || "Erreur du coach IA");
+    coachMessages.push({ from:'coach', text: data.answer, lecon: lecon || null, excerpt: lecon ? (lecon.contenu.split(/\n+/).find(s=>s.trim().length>20) || lecon.contenu.slice(0,160)) : null });
+  }catch(e){
+    coachMessages.push({ from:'coach', text: "Petit souci de connexion avec le coach IA, réessaie dans un instant." });
+  }
+  coachLoading = false; render();
+  setTimeout(()=>{ const el = document.getElementById('coachScroll'); if(el) el.scrollTop = el.scrollHeight; }, 30);
+}
+
+function viewCoach(){
+  return `
+  <div class="form-wrap" style="background:#12331f; padding-bottom:14px;">
+    <div class="brandbar" style="margin-bottom:10px;"><div class="brand" style="color:#fff;">🤖 Coach IA</div></div>
+    <div id="coachScroll" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; margin-bottom:10px;">
+      ${coachMessages.map(m=>{
+        if(m.from==='user'){
+          return `<div style="align-self:flex-end; background:var(--gold); color:#3d2400; padding:10px 14px; border-radius:14px 14px 2px 14px; max-width:82%; font-weight:600; font-size:14px;">${m.text}</div>`;
+        }
+        return `<div style="align-self:flex-start; background:#fff; color:var(--ink); padding:12px 14px; border-radius:14px 14px 14px 2px; max-width:88%; font-size:14px; line-height:1.5;">
+          ${m.text}
+          ${m.lecon ? `<div style="margin-top:8px; padding:10px; background:var(--green-soft); border-radius:10px; font-size:12.5px; color:#2f5c46;">${m.excerpt}</div>
+            <button onclick="openLecon('${m.lecon.id}','cours')" style="margin-top:8px; background:var(--terracotta); color:#fff; border:none; border-radius:10px; padding:8px 12px; font-weight:700; font-size:12.5px; cursor:pointer;">Ouvrir la leçon 📖</button>` : ""}
+        </div>`;
+      }).join("")}
+      ${coachLoading ? `<div style="align-self:flex-start; color:#F6E6D6; font-size:13px;">Le coach cherche dans tes cours…</div>` : ""}
+    </div>
+    <div style="display:flex; gap:8px;">
+      <input id="coachInput" type="text" placeholder="Pose ta question..." style="flex:1; padding:12px 14px; border-radius:12px; border:none; font-size:14px;" onkeydown="if(event.key==='Enter') askCoach();">
+      <button onclick="askCoach()" style="background:var(--gold); color:#3d2400; border:none; border-radius:12px; padding:0 16px; font-weight:800; cursor:pointer;">➤</button>
+    </div>
+    <button class="wlogin" style="margin-top:12px;" onclick="step='welcome'; welcomeSlide=0; render();">‹ Retour à l'accueil</button>
+  </div>`;
 }
 
 render();
