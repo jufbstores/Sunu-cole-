@@ -65,6 +65,13 @@ let sessionActive = false;
 let ans = { prenom:"", profil:null, consentAge:false, niveau:null, classe:null, serie:null,
   matieres:[], objectifs:[], temps:2, nbEnfants:null, plan:"premium", duree:"12mois" };
 
+function getPrice(plan, duree){
+  const isPremium = plan === "premium";
+  return duree === "12mois" ? (isPremium ? 4900 : 2900) : (isPremium ? 12900 : 7900);
+}
+
+function escHtml(s){ return (s||"").toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function needsSerie(){ return ans.niveau==="lycee" && ans.classe && ans.classe!=="2nde"; }
 function visibleSteps(){
   return ORDER.filter(s=>!["welcome","final","form","success"].includes(s)).filter(s=> s!=="serie" || needsSerie());
@@ -114,7 +121,7 @@ function header(){
   const visible = visibleSteps();
   const idx = visible.indexOf(step);
   const canBack = ORDER.indexOf(step) > 0;
-  const skippable = ["matieres","objectifs","nbenfants"].includes(step);
+  const skippable = ["matieres","objectifs"].includes(step);
   const shells = visible.map((s,i)=>`<span class="shell ${i<=idx?'done':''} ${i===idx?'now':''}"></span>`).join("");
   return `
     <div class="topbar">
@@ -343,7 +350,7 @@ function viewPrenom(){
     <div class="tip"><span class="emoji">💡</span><p>Ce profil concerne un seul élève. Tu pourras en ajouter d'autres à la fin de l'inscription.</p></div>
     <div class="field">
       <div class="lined">
-        <input id="prenomInput" type="text" placeholder="Ex : Fatou" value="${ans.prenom}" oninput="ans.prenom=this.value; document.getElementById('btnPrenom').disabled = !this.value.trim();">
+        <input id="prenomInput" type="text" placeholder="Ex : Fatou" value="${escHtml(ans.prenom)}" oninput="ans.prenom=this.value; document.getElementById('btnPrenom').disabled = !this.value.trim();">
       </div>
     </div>
     <button class="cta" id="btnPrenom" ${ans.prenom.trim()?"":"disabled"} onclick="nextStep()">Continuer</button>
@@ -351,7 +358,7 @@ function viewPrenom(){
 }
 
 function viewProfil(){
-  const name = ans.prenom || "cet élève";
+  const name = escHtml(ans.prenom) || "cet élève";
   const isEleve = ans.profil === 'eleve';
   const canContinue = ans.profil==='parent' || (ans.profil==='eleve' && ans.consentAge);
   return `
@@ -372,7 +379,7 @@ function viewProfil(){
 }
 
 function viewNiveau(){
-  const name = ans.prenom || "l'élève";
+  const name = escHtml(ans.prenom) || "l'élève";
   return `
     <h1 class="title">Dans quel cycle étudie ${name} ?</h1>
     <div class="tip"><span class="emoji">✅</span><p>Tous nos contenus sont conformes au programme officiel du Ministère de l'Éducation nationale du Sénégal.</p></div>
@@ -386,7 +393,7 @@ function viewNiveau(){
 
 function viewClasse(){
   const list = GRADES[ans.niveau];
-  const name = ans.prenom || "l'élève";
+  const name = escHtml(ans.prenom) || "l'élève";
   const tip = ans.niveau==="primaire" ? "En primaire, plus de 10 000 contenus sont à la disposition de "+name+"."
             : ans.niveau==="college" ? "Le kit spécial BFEM est inclus dès la classe de 3ème."
             : "Le kit spécial Baccalauréat est inclus dès la Terminale.";
@@ -411,7 +418,7 @@ function viewSerie(){
 
 function viewMatieres(){
   const list = SUBJECTS[ans.niveau];
-  const name = ans.prenom || "l'élève";
+  const name = escHtml(ans.prenom) || "l'élève";
   return `
     <h1 class="title">Quelles matières réviser en priorité ?</h1>
     <div class="tip"><span class="emoji">📌</span><p>${name} aura accès à toutes les matières du programme, quel que soit ton choix ici.</p></div>
@@ -433,7 +440,7 @@ function viewObjectifs(){
 }
 
 function viewTemps(){
-  const name = ans.prenom || "il/elle";
+  const name = escHtml(ans.prenom) || "il/elle";
   const val = TEMPS[ans.temps];
   return `
     <h1 class="title">Combien de temps par jour ?</h1>
@@ -464,8 +471,8 @@ function viewNbEnfants(){
 
 function viewPricing(){
   const isPremium = ans.plan==="premium";
-  const priceY = isPremium ? 4900 : 2900;
-  const priceM = isPremium ? 12900 : 7900;
+  const priceY = getPrice(ans.plan, "12mois");
+  const priceM = getPrice(ans.plan, "1mois");
   const annual = priceY*12;
   return `
     <div class="brandbar" style="margin-bottom:6px;"><div class="brand"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">Sunu École</div></div>
@@ -515,7 +522,7 @@ function viewPricing(){
 }
 
 function viewFinal(){
-  const name = ans.prenom || "ton enfant";
+  const name = escHtml(ans.prenom) || "ton enfant";
   return `
   <div class="final-wrap">
     <div class="final-hero">
@@ -536,7 +543,7 @@ function viewForm(){
   <div class="form-wrap">
     <div class="brandbar" style="margin-bottom:18px;"><div class="brand"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">Sunu École</div></div>
     <h1 class="title">Créez vos identifiants</h1>
-    <p class="subtitle">Dernière étape avant que ${ans.prenom||"votre enfant"} ne commence à réviser.</p>
+    <p class="subtitle">Dernière étape avant que ${escHtml(ans.prenom)||"votre enfant"} ne commence à réviser.</p>
     <div class="form-field"><label>Adresse e-mail</label><input type="email" id="emailInput" placeholder="vous@exemple.com"></div>
     <div class="form-field"><label>Mot de passe</label><input type="password" id="pwdInput" placeholder="8 caractères minimum"></div>
     <p class="form-msg" id="formMsg"></p>
@@ -608,7 +615,7 @@ async function submitLogin(){
 
 let loggedPrenom = "";
 function viewLoginSuccess(){
-  const hello = loggedPrenom ? `, ${loggedPrenom}` : "";
+  const hello = loggedPrenom ? `, ${escHtml(loggedPrenom)}` : "";
   return `
   <div class="welcome" style="background:radial-gradient(120% 80% at 50% -10%, #F0A85C 0%, #C1440E 55%, #6E2A12 100%);">
     <div class="wbrand">
@@ -679,7 +686,7 @@ async function submitAccount(){
     if(!userId) throw new Error("Impossible de créer le compte, réessaie.");
 
     if(session){
-      const prix = ans.plan==="premium" ? (ans.duree==="12mois"?4900:12900) : (ans.duree==="12mois"?2900:7900);
+      const prix = getPrice(ans.plan, ans.duree);
 
       const { data: eleveRow, error: eleveErr } = await sb.from('eleves').insert({
         user_id: userId, profil: ans.profil, consent_maj: ans.profil==='eleve' ? !!ans.consentAge : null,
@@ -719,7 +726,7 @@ async function submitAccount(){
 
 
 function viewSuccess(){
-  const name = ans.prenom || "champion";
+  const name = escHtml(ans.prenom) || "champion";
   return `
   <div class="success">
     <div class="big-lion">🦁🌳</div>
@@ -1000,7 +1007,7 @@ let coachLoading = false;
 
 function openCoach(){
   if(!coachMessages.length){
-    const name = ans.prenom || loggedPrenom || "";
+    const name = escHtml(ans.prenom || loggedPrenom || "");
     coachMessages = [{ from:'coach', text: `Jërejëf${name?' '+name:''} ! Pose-moi une question sur ton programme (ex : "les pourcentages", "l'indépendance du Sénégal") et je cherche dans tes cours pour toi. 🌳` }];
   }
   step = 'coach'; render();
@@ -1026,10 +1033,18 @@ async function askCoach(){
       }
     }
     if(!classe) classe = ans.classe || null;
-    let req = sb.from('lecons').select('*').or(`titre.ilike.%${question}%,contenu.ilike.%${question}%`);
-    if(classe) req = req.eq('classe', classe);
-    const { data: matches } = await req.limit(1);
-    const lecon = matches && matches[0];
+    // On retire les caractères qui ont un sens spécial pour le filtre PostgREST
+    // (virgule, parenthèses, %) pour éviter qu'une question normale (ex: contenant
+    // une virgule) ne casse la recherche ou n'altère le filtre.
+    const safeQ = question.replace(/[,()%*]/g, ' ').trim();
+    let lecon = null;
+    if(safeQ){
+      let reqTitre = sb.from('lecons').select('*').ilike('titre', `%${safeQ}%`);
+      let reqContenu = sb.from('lecons').select('*').ilike('contenu', `%${safeQ}%`);
+      if(classe){ reqTitre = reqTitre.eq('classe', classe); reqContenu = reqContenu.eq('classe', classe); }
+      const [byTitre, byContenu] = await Promise.all([reqTitre.limit(1), reqContenu.limit(1)]);
+      lecon = (byTitre.data && byTitre.data[0]) || (byContenu.data && byContenu.data[0]) || null;
+    }
 
     const res = await fetch('/api/coach', {
       method:'POST',
@@ -1059,11 +1074,11 @@ function viewCoach(){
     <div id="coachScroll" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; margin-bottom:10px;">
       ${coachMessages.map(m=>{
         if(m.from==='user'){
-          return `<div style="align-self:flex-end; background:var(--gold); color:#3d2400; padding:10px 14px; border-radius:14px 14px 2px 14px; max-width:82%; font-weight:600; font-size:14px;">${m.text}</div>`;
+          return `<div style="align-self:flex-end; background:var(--gold); color:#3d2400; padding:10px 14px; border-radius:14px 14px 2px 14px; max-width:82%; font-weight:600; font-size:14px;">${escHtml(m.text)}</div>`;
         }
         return `<div style="align-self:flex-start; background:#fff; color:var(--ink); padding:12px 14px; border-radius:14px 14px 14px 2px; max-width:88%; font-size:14px; line-height:1.5;">
-          ${m.text}
-          ${m.lecon ? `<div style="margin-top:8px; padding:10px; background:var(--green-soft); border-radius:10px; font-size:12.5px; color:#2f5c46;">${m.excerpt}</div>
+          ${escHtml(m.text)}
+          ${m.lecon ? `<div style="margin-top:8px; padding:10px; background:var(--green-soft); border-radius:10px; font-size:12.5px; color:#2f5c46;">${escHtml(m.excerpt)}</div>
             <button onclick="openLecon('${m.lecon.id}','cours')" style="margin-top:8px; background:var(--terracotta); color:#fff; border:none; border-radius:10px; padding:8px 12px; font-weight:700; font-size:12.5px; cursor:pointer;">Ouvrir la leçon 📖</button>` : ""}
         </div>`;
       }).join("")}
