@@ -70,7 +70,7 @@ function togglePwdVisibility() {
 
 async function attemptLogin() {
   const emailVal = document.getElementById('emailInput').value.trim();
-  const pwdVal = document.getElementById('pwdInput').value;
+  const pwdVal = document.getElementById('pwdInput').value.trim();
   const err = document.getElementById('loginErr');
   err.textContent = '';
   if (!emailVal || !pwdVal) { err.textContent = 'Merci de saisir e-mail et mot de passe.'; return; }
