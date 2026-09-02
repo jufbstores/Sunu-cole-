@@ -20,8 +20,7 @@ const SUBJECTS = {
   college: [
     {em:"🖊️", label:"Français"}, {em:"🔢", label:"Mathématiques"},
     {em:"🏺", label:"Histoire-Géo"}, {em:"⚖️", label:"ECM"},
-    {em:"🧬", label:"SVT"}, {em:"⚗️", label:"Physique-Chimie"},
-    {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+    {em:"🧬", label:"SVT"}, {em:"🗣️", label:"Anglais"}
   ],
   lycee: [
     {em:"🖊️", label:"Français"}, {em:"🧠", label:"Philosophie"},
@@ -30,6 +29,11 @@ const SUBJECTS = {
     {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
   ]
 };
+
+// Matières qui n'apparaissent qu'à partir de la 4ème (Physique-Chimie, Arabe)
+const COLLEGE_MATIERES_4E_3E = [
+  {em:"⚗️", label:"Physique-Chimie"}, {em:"📗", label:"Arabe"}
+];
 
 const OBJECTIFS = [
   {em:"📈", label:"Suivre ses progrès"}, {em:"🦅", label:"Favoriser son autonomie"},
@@ -417,7 +421,10 @@ function viewSerie(){
 }
 
 function viewMatieres(){
-  const list = SUBJECTS[ans.niveau];
+  let list = SUBJECTS[ans.niveau];
+  if(ans.niveau === 'college' && (ans.classe === '4ème' || ans.classe === '3ème (BFEM)')){
+    list = list.concat(COLLEGE_MATIERES_4E_3E);
+  }
   const name = escHtml(ans.prenom) || "l'élève";
   return `
     <h1 class="title">Quelles matières réviser en priorité ?</h1>

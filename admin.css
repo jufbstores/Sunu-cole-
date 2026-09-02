@@ -47,6 +47,8 @@ input,select{font-family:inherit;}
 
 .add-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
 .add-row input,.add-row select{padding:9px 11px; border-radius:8px; border:1px solid var(--slate-line); font-size:13.5px;}
+.panel select, .panel textarea{font-size:13.5px;}
+.panel select{padding:9px 11px; border-radius:8px; border:1px solid var(--slate-line); background:#fff;}
 .add-row input.nom{flex:1; min-width:140px;}
 .add-row input.emoji{width:60px; text-align:center;}
 .add-row input.ordre{width:60px; text-align:center;}
