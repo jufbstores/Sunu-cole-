@@ -9,7 +9,9 @@ const GRADES = {
   college: ["6ème","5ème","4ème","3ème (BFEM)"],
   lycee: ["2nde","1ère","Terminale (Bac)"]
 };
-const SERIES = ["L (Littéraire)","S1 (Sciences Exp.)","S2 (Sciences Exp.)","G (Gestion)","T (Technique)"];
+// La 2nde n'a que 2 séries (L/S) ; à partir de la 1ère, ça se subdivise davantage (S1/S2, L1/L2...)
+const SERIES_2NDE = ["L (Littéraire)","S (Scientifique)"];
+const SERIES_1ERE_TLE = ["L1 (Littéraire)","L2 (Littéraire)","S1 (Sciences Exp.)","S2 (Sciences Exp.)","G (Gestion)","T (Technique)"];
 
 const SUBJECTS = {
   primaire: [
@@ -23,10 +25,9 @@ const SUBJECTS = {
     {em:"🧬", label:"SVT"}, {em:"🗣️", label:"Anglais"}
   ],
   lycee: [
-    {em:"🖊️", label:"Français"}, {em:"🧠", label:"Philosophie"},
-    {em:"🔢", label:"Mathématiques"}, {em:"🏺", label:"Histoire-Géo"},
-    {em:"🧬", label:"SVT"}, {em:"⚗️", label:"Physique-Chimie"},
-    {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+    {em:"🖊️", label:"Français"}, {em:"🔢", label:"Mathématiques"},
+    {em:"🏺", label:"Histoire-Géo"}, {em:"🧬", label:"SVT"},
+    {em:"⚗️", label:"Physique-Chimie"}, {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
   ]
 };
 
@@ -34,6 +35,55 @@ const SUBJECTS = {
 const COLLEGE_MATIERES_4E_3E = [
   {em:"⚗️", label:"Physique-Chimie"}, {em:"📗", label:"Arabe"}
 ];
+
+// Matières de 2nde selon la série (L ou S) — pas encore de Philosophie
+const LYCEE_MATIERES_2NDE = {
+  L: [
+    {em:"🖊️", label:"Français"}, {em:"🔢", label:"Mathématiques"},
+    {em:"🏺", label:"Histoire-Géo"}, {em:"🧬", label:"SVT"},
+    {em:"⚗️", label:"Physique-Chimie"}, {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+  ],
+  S: [
+    {em:"🖊️", label:"Français"}, {em:"🔢", label:"Mathématiques"},
+    {em:"🏺", label:"Histoire-Géo"}, {em:"🧬", label:"SVT"},
+    {em:"⚗️", label:"Physique-Chimie"}, {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+  ]
+};
+
+// Matières de 1ère/Terminale selon la série (Philosophie apparaît ici)
+const LYCEE_MATIERES_PAR_SERIE = {
+  L: [
+    {em:"🖊️", label:"Français"}, {em:"📖", label:"Littérature"}, {em:"🧠", label:"Philosophie"},
+    {em:"🔢", label:"Mathématiques"}, {em:"🏺", label:"Histoire-Géo"},
+    {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+  ],
+  S: [
+    {em:"🖊️", label:"Français"}, {em:"🧠", label:"Philosophie"}, {em:"🔢", label:"Mathématiques"},
+    {em:"⚗️", label:"Physique-Chimie"}, {em:"🧬", label:"SVT"}, {em:"🏺", label:"Histoire-Géo"},
+    {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+  ],
+  G: [
+    {em:"🖊️", label:"Français"}, {em:"🧠", label:"Philosophie"}, {em:"🔢", label:"Mathématiques"},
+    {em:"💰", label:"Économie"}, {em:"🏺", label:"Histoire-Géo"},
+    {em:"🗣️", label:"Anglais"}, {em:"📗", label:"Arabe"}
+  ]
+};
+
+// Regroupe les 5 séries précises choisies par l'élève en 3 grandes filières de contenu
+function trackFromSerie(serie){
+  if(!serie) return null;
+  if(serie.startsWith("L")) return "L";
+  if(serie.startsWith("S")) return "S";
+  return "G"; // G (Gestion) et T (Technique) partagent le même contenu générique
+}
+
+// Calcule la classe exacte utilisée pour filtrer le contenu dans Supabase (ex: "Terminale S", "2nde L")
+function contentClasse(classe, serie){
+  if(!classe) return null;
+  const base = classe.replace(" (Bac)", "").trim();
+  const track = trackFromSerie(serie);
+  return track ? `${base} ${track}` : base;
+}
 
 const OBJECTIFS = [
   {em:"📈", label:"Suivre ses progrès"}, {em:"🦅", label:"Favoriser son autonomie"},
@@ -76,7 +126,8 @@ function getPrice(plan, duree){
 
 function escHtml(s){ return (s||"").toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function needsSerie(){ return ans.niveau==="lycee" && ans.classe && ans.classe!=="2nde"; }
+function needsSerie(){ return ans.niveau==="lycee" && !!ans.classe; }
+function seriesForClasse(){ return ans.classe === "2nde" ? SERIES_2NDE : SERIES_1ERE_TLE; }
 function visibleSteps(){
   return ORDER.filter(s=>!["welcome","final","form","success"].includes(s)).filter(s=> s!=="serie" || needsSerie());
 }
@@ -414,16 +465,22 @@ function viewSerie(){
   return `
     <h1 class="title">Quelle série a-t-il/elle choisie ?</h1>
     <div class="tip"><span class="emoji">🧭</span><p>Le contenu proposé s'adapte automatiquement au coefficient de chaque matière selon la série.</p></div>
-    ${SERIES.map(s=>`<div class="option ${ans.serie===s?'selected':''}" onclick="ans.serie='${s}'; spawnDust(event); render();">${s}</div>`).join("")}
+    ${seriesForClasse().map(s=>`<div class="option ${ans.serie===s?'selected':''}" onclick="ans.serie='${s}'; spawnDust(event); render();">${s}</div>`).join("")}
     <div class="grow"></div>
     <button class="cta" ${ans.serie?"":"disabled"} onclick="nextStep()">Continuer</button>
   `;
 }
 
 function viewMatieres(){
-  let list = SUBJECTS[ans.niveau];
-  if(ans.niveau === 'college' && (ans.classe === '4ème' || ans.classe === '3ème (BFEM)')){
-    list = list.concat(COLLEGE_MATIERES_4E_3E);
+  let list;
+  if(ans.niveau === 'lycee'){
+    const map = ans.classe === '2nde' ? LYCEE_MATIERES_2NDE : LYCEE_MATIERES_PAR_SERIE;
+    list = map[trackFromSerie(ans.serie)] || SUBJECTS.lycee;
+  } else {
+    list = SUBJECTS[ans.niveau];
+    if(ans.niveau === 'college' && (ans.classe === '4ème' || ans.classe === '3ème (BFEM)')){
+      list = list.concat(COLLEGE_MATIERES_4E_3E);
+    }
   }
   const name = escHtml(ans.prenom) || "l'élève";
   return `
@@ -776,14 +833,14 @@ async function openEspace(mode){
     let matieres = [];
     let classe = null;
     if(user){
-      const { data: eleves } = await sb.from('eleves').select('id,classe').eq('user_id', user.id).order('created_at', { ascending:false }).limit(1);
+      const { data: eleves } = await sb.from('eleves').select('id,classe,serie').eq('user_id', user.id).order('created_at', { ascending:false }).limit(1);
       if(eleves && eleves.length){
-        classe = eleves[0].classe;
+        classe = contentClasse(eleves[0].classe, eleves[0].serie);
         const { data: em } = await sb.from('eleve_matieres').select('matiere').eq('eleve_id', eleves[0].id);
         matieres = (em||[]).map(r=>r.matiere);
       }
     }
-    if(!classe) classe = ans.classe || null;
+    if(!classe) classe = contentClasse(ans.classe, ans.serie) || null;
     let req = sb.from('lecons').select('*').order('matiere', { ascending:true }).order('ordre', { ascending:true });
     if(classe) req = req.eq('classe', classe);
     if(matieres.length) req = req.in('matiere', matieres);
@@ -955,14 +1012,14 @@ async function openDefi(){
     const user = userData && userData.user;
     let matieres = [], classe = null;
     if(user){
-      const { data: eleves } = await sb.from('eleves').select('id,classe').eq('user_id', user.id).order('created_at',{ascending:false}).limit(1);
+      const { data: eleves } = await sb.from('eleves').select('id,classe,serie').eq('user_id', user.id).order('created_at',{ascending:false}).limit(1);
       if(eleves && eleves.length){
-        classe = eleves[0].classe;
+        classe = contentClasse(eleves[0].classe, eleves[0].serie);
         const { data: em } = await sb.from('eleve_matieres').select('matiere').eq('eleve_id', eleves[0].id);
         matieres = (em||[]).map(r=>r.matiere);
       }
     }
-    if(!classe) classe = ans.classe || null;
+    if(!classe) classe = contentClasse(ans.classe, ans.serie) || null;
     let req = sb.from('lecons').select('*');
     if(classe) req = req.eq('classe', classe);
     if(matieres.length) req = req.in('matiere', matieres);
@@ -1032,14 +1089,14 @@ async function askCoach(){
     const user = userData && userData.user;
     let matieres = [], classe = null;
     if(user){
-      const { data: eleves } = await sb.from('eleves').select('id,classe').eq('user_id', user.id).order('created_at',{ascending:false}).limit(1);
+      const { data: eleves } = await sb.from('eleves').select('id,classe,serie').eq('user_id', user.id).order('created_at',{ascending:false}).limit(1);
       if(eleves && eleves.length){
-        classe = eleves[0].classe;
+        classe = contentClasse(eleves[0].classe, eleves[0].serie);
         const { data: em } = await sb.from('eleve_matieres').select('matiere').eq('eleve_id', eleves[0].id);
         matieres = (em||[]).map(r=>r.matiere);
       }
     }
-    if(!classe) classe = ans.classe || null;
+    if(!classe) classe = contentClasse(ans.classe, ans.serie) || null;
     // On retire les caractères qui ont un sens spécial pour le filtre PostgREST
     // (virgule, parenthèses, %) pour éviter qu'une question normale (ex: contenant
     // une virgule) ne casse la recherche ou n'altère le filtre.
