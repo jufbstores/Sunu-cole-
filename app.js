@@ -870,6 +870,7 @@ function viewEspace(){
   const matieresList = Object.keys(grouped);
   return `
   <div class="form-wrap" style="background:var(--slate-bg); color:var(--ink);">
+    <button class="back-btn" style="background:var(--leaf-dark); margin-bottom:14px;" onclick="goHome();">‹</button>
     <div class="brandbar"><div class="brand" style="color:var(--leaf-dark);"><img src="logo-emblem.png" class="logo-emblem-sm" alt="Sunu École">${meta.titre}</div></div>
     ${espaceClasse ? `<p style="text-align:center; margin:-10px 0 14px; font-weight:700; color:var(--terracotta);">Classe : ${espaceClasse}</p>` : ""}
     ${matieresList.length===0 ? `<p class="subtitle">${espaceClasse ? `Le contenu pour la classe de ${espaceClasse} arrive bientôt ! Pour l'instant, le programme complet est disponible du CI au CM2.` : meta.vide}</p>` : ""}
@@ -883,7 +884,6 @@ function viewEspace(){
       `).join("")}
     `).join("")}
     <div class="grow"></div>
-    <button class="cta" onclick="goHome();">‹ Retour à l'accueil</button>
   </div>`;
 }
 
