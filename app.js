@@ -678,6 +678,12 @@ async function submitLogin(){
 }
 
 let loggedPrenom = "";
+// Retour à l'accueil : ramène un utilisateur connecté vers son espace personnel (loginSuccess),
+// plutôt que vers l'écran d'inscription générique destiné aux nouveaux visiteurs.
+function goHome(){
+  if(loggedPrenom || sessionActive){ step = 'loginSuccess'; } else { step = 'welcome'; welcomeSlide = 0; }
+  render();
+}
 function viewLoginSuccess(){
   const hello = loggedPrenom ? `, ${escHtml(loggedPrenom)}` : "";
   return `
@@ -702,7 +708,7 @@ function viewLoginSuccess(){
     <h1 class="wheadline">Content de te revoir${hello} !</h1>
     <p class="wsubtitle">Ton espace de révision t'attend, avec tes cours, tes matières et ton coach IA.</p>
     <button class="wcta" onclick="openEspace()">📖 Voir mes cours</button>
-    <button class="wlogin" onclick="step='welcome'; welcomeSlide=0; render();">Retour à l'accueil</button>
+    <button class="wlogin" onclick="goHome();">Retour à l'accueil</button>
   </div>`;
 }
 
@@ -877,7 +883,7 @@ function viewEspace(){
       `).join("")}
     `).join("")}
     <div class="grow"></div>
-    <button class="cta" onclick="step='welcome'; welcomeSlide=0; render();">‹ Retour à l'accueil</button>
+    <button class="cta" onclick="goHome();">‹ Retour à l'accueil</button>
   </div>`;
 }
 
@@ -1045,12 +1051,12 @@ function answerDefi(i){
 function viewDefi(){
   if(defiLoading) return `<div class="success"><div class="big-lion">🏆</div><p>Préparation de ton défi...</p></div>`;
   if(!defiQuestion){
-    return `<div class="success"><p>Pas encore de défi disponible pour ta classe.</p><button class="cta" style="max-width:220px;" onclick="step='welcome'; welcomeSlide=0; render();">Retour</button></div>`;
+    return `<div class="success"><p>Pas encore de défi disponible pour ta classe.</p><button class="cta" style="max-width:220px;" onclick="goHome();">Retour</button></div>`;
   }
   const q = defiQuestion;
   return `
   <div class="form-wrap" style="background:var(--slate-bg); color:var(--ink); padding-bottom:20px;">
-    <button class="back-btn" style="background:var(--terracotta); margin-bottom:14px;" onclick="step='welcome'; welcomeSlide=0; render();">‹</button>
+    <button class="back-btn" style="background:var(--terracotta); margin-bottom:14px;" onclick="goHome();">‹</button>
     <span class="eyebrow" style="align-self:flex-start; background:#FDF1D6; color:#8f320a;">🏆 Défi du jour · ${defiLecon.matiere}</span>
     <h1 class="title" style="margin-top:8px;">${q.question}</h1>
     ${q.choix.map((c,i)=>{
@@ -1152,7 +1158,7 @@ function viewCoach(){
       <input id="coachInput" type="text" placeholder="Pose ta question..." style="flex:1; padding:12px 14px; border-radius:12px; border:none; font-size:14px;" onkeydown="if(event.key==='Enter') askCoach();">
       <button onclick="askCoach()" style="background:var(--gold); color:#3d2400; border:none; border-radius:12px; padding:0 16px; font-weight:800; cursor:pointer;">➤</button>
     </div>
-    <button class="wlogin" style="margin-top:12px;" onclick="step='welcome'; welcomeSlide=0; render();">‹ Retour à l'accueil</button>
+    <button class="wlogin" style="margin-top:12px;" onclick="goHome();">‹ Retour à l'accueil</button>
   </div>`;
 }
 
